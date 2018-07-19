@@ -1,8 +1,15 @@
-# Fast radial symmetry transform using OpenCV
+# Generalized Fast radial symmetry transform using OpenCV
 
-This is an implementation of the Fast radial symmetry transform using OpenCV.
+This is an implementation of the Generalized Fast radial symmetry transform (GFRST) using OpenCV.
 
-See details:
-Loy, G., & Zelinsky, A. (2002). A fast radial symmetry transform for detecting points of interest. Computer Vision, ECCV 2002.
+Original code of the Fast radial symmetry transform (FRST) by Nikita can be fund at: https://github.com/Xonxt/frst
 
-The code was ported from a MATLAB implementation and tested with OpenCV 3.0.0 (x64).
+## References
+
+### Original GFRST Paper
+
+Loy, Gareth, and Nick Barnes. "Fast shape-based road sign detection for a driver assistance system." Intelligent Robots and Systems, 2004.(IROS 2004). Proceedings. 2004 IEEE/RSJ International Conference on. Vol. 1. IEEE, 2004.
+
+### R&D review
+
+Toro, Matias Alejandro Valdenegro. "Fast Radial Symmetry Detection for Traic Sign Recognition." (2015).
