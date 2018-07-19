@@ -30,7 +30,8 @@ void gradx(const cv::Mat& input, cv::Mat &output);
  * @param mode Transform mode ('bright', 'dark' or 'both')
  * @param sideNumber number of sides of the polygon
  */
-void gfrst2d(const cv::Mat& inputImage, cv::Mat& outputImage, const int& radii, const double& stdFactor, const int& mode, const int sideNumber);
+void gfrst2d(const cv::Mat& inputImage, cv::Mat& outputImage, std::pair<cv::Mat,cv::Mat>& outputVector,
+             const int& radii, const int& mode, const int sideNumber);
 
 /**
  * @brief voteOnLine Vote for the lines of possible polygone center

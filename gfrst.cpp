@@ -36,7 +36,8 @@ void gradx(const cv::Mat& input, cv::Mat &output)
 
 
 
-void frst2d(const cv::Mat& inputImage, cv::Mat& outputImage, const int& radii, const double& stdFactor, const int& mode, const int sideNumber)
+void gfrst2d(const cv::Mat& inputImage, cv::Mat& outputImage, std::pair<cv::Mat,cv::Mat>& outputVector,
+             const int& radii, const int& mode, const int sideNumber)
 {
     int width = inputImage.cols;
     int height = inputImage.rows;
@@ -96,43 +97,27 @@ void frst2d(const cv::Mat& inputImage, cv::Mat& outputImage, const int& radii, c
             }
         }
     }
-    double min, max;
 
     O_n = cv::abs(O_n);
-    cv::minMaxLoc(O_n, &min, &max);
-    O_n = O_n / max;
 
     cv::Mat Bnorm;
     cv::sqrt(By_n.mul(By_n) + Bx_n.mul(Bx_n), Bnorm);
-    cv::minMaxLoc(Bnorm, &min, &max);
-    Bnorm = Bnorm / max;
 
-    S = O_n.mul(Bnorm) / (4 * (w * radii) * (w * radii));
+//    S = O_n.mul(Bnorm) / (4 * (w * radii) * (w * radii));
+    S = O_n.mul(Bnorm) / (4 * radii * radii);
 
-    int kSize = std::ceil(radii / 2);
-    if (kSize % 2 == 0)
-        kSize++;
-
-    cv::GaussianBlur(S, S, cv::Size(kSize, kSize), radii * stdFactor);
+//    int kSize = std::ceil(radii / 2);
+//    if (kSize % 2 == 0)
+//        kSize++;
+//    cv::GaussianBlur(S, S, cv::Size(kSize, kSize), radii * stdFactor);
 
     outputImage = S(cv::Rect(borderOffset, borderOffset, width, height));
+    outputVector.first = Bx_n;
+    outputVector.second = By_n;
 }
 
 
-/**
- * @brief voteOnLine Vote for the lines of possible polygone center
- * @param O_n matrix of the vote count for a given center
- * @param Bx_n matrix of the x coordinate of the polygon gradient vector
- * @param By_n matrix of the x coordinate of the polygon gradient vector
- * @param gp gradient vector, normalized to the radius length
- * @param gNorm norm of the original gradient vector
- * @param nAngle angle of the gradient vector
- * @param gradientPoint point where the gradiant was computed
- * @param bright true if we considere the centre to be in the bright direction
- * @param dark true if we considere the centre to be in the dark direction
- * @param w vote line length parameter (positif vote for 2*w+1 plus w negative vote at each end)
- * @param radii internal radius of the polygone we are looking for
- */
+
 inline void voteOnLine(cv::Mat &O_n, cv::Mat & Bx_n, cv::Mat & By_n, const cv::Vec2i &gp, const double &gNorm, const double &nAngle,
                        const cv::Point &gradientPoint, const bool &bright, const bool &dark, const int & w, const double &radii)
 {
@@ -156,21 +141,7 @@ inline void voteOnLine(cv::Mat &O_n, cv::Mat & Bx_n, cv::Mat & By_n, const cv::V
 }
 
 
-/**
- * @brief voteAtPos
- * @param O_n matrix of the vote count for a given center
- * @param Bx_n matrix of the x coordinate of the polygon gradient vector
- * @param By_n matrix of the x coordinate of the polygon gradient vector
- * @param bright true if we considere the centre to be in the bright direction
- * @param dark true if we considere the centre to be in the dark direction
- * @param gradientPoint point where the gradiant was computed
- * @param m line parameter
- * @param lineSuport unit vector suporting the line
- * @param gp gradient vector, normalized to the radius length
- * @param gNorm norm of the original gradient vector
- * @param nAngle angle of the gradient vector
- * @param voteValue weight of the vote (default: 1)
- */
+
 inline void voteAtPos(cv::Mat & O_n, cv::Mat & Bx_n, cv::Mat & By_n, const bool & bright, const bool & dark, const cv::Point & gradientPoint,
                       const int & m, const cv::Vec2d &lineSuport, const cv::Vec2i &gp, const double & gnorm, const double &nAngle, const int & voteValue)
 {
