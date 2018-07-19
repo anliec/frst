@@ -1,4 +1,4 @@
-#include "frst.h"
+#include "gfrst.h"
 
 #include <iostream>
 #include <string.h>
@@ -13,6 +13,13 @@ int main(int argc, char* argv[]) {
 	else {
 		image = cv::imread("image.jpeg");
 	}
+
+    int radius = 83;
+
+    if (argc > 2)
+    {
+        radius = std::atoi(argv[2]);
+    }
 
 	if (!image.data) {
 		std::cout << "Could not open or find the image" << std::endl;
@@ -32,7 +39,7 @@ int main(int argc, char* argv[]) {
 
 	// apply FRST
 	cv::Mat frstImage;
-	frst2d(grayImg, frstImage, 12, 2, 0.1, FRST_MODE_DARK);
+    frst2d(grayImg, frstImage, radius, 2, 0.1, FRST_MODE_BOTH, 4);
 
 	// the frst will have irregular values, normalize them!
 	cv::normalize(frstImage, frstImage, 0.0, 1.0, cv::NORM_MINMAX);
@@ -52,31 +59,32 @@ int main(int argc, char* argv[]) {
 
 	// get the moments
 	std::vector<cv::Moments> mu(contours.size());
-	for (int i = 0; i < contours.size(); i++)
+    for (unsigned i = 0; i < contours.size(); i++)
 	{
 		mu[i] = moments(contours[i], false);
 	}
 
 	//  get the mass centers:
 	std::vector<cv::Point2f> mc(contours.size());
-	for (int i = 0; i < contours.size(); i++)
+    for (unsigned i = 0; i < contours.size(); i++)
 	{
 		mc[i] = cv::Point2f(mu[i].m10 / mu[i].m00, mu[i].m01 / mu[i].m00);
 	}
 
 	// draw the point centers	
-	for (int i = 0; i< contours.size(); i++)
+    for (unsigned i = 0; i< contours.size(); i++)
 	{		
-		cv::circle(image, mc[i], 2, CV_RGB(0,255,0), -1, 8, 0);
+        cv::circle(image, mc[i], radius, CV_RGB(0,255,0), 5, 8, 0);
 	}
 	
 	// display the image
 	for (;;) {
 		cv::imshow("Display window", image);
+        cv::imshow("Votes", frstImage);
 
 		char ch = cv::waitKey(10);
 
-		if (char(ch) == 27)
+        if (char(ch) == 27 || ch == 'q') // esc key
 			break;
 	}
 
