@@ -32,7 +32,7 @@ void gradx(const cv::Mat& input, cv::Mat &output);
 	@param stdFactor Standard deviation factor
 	@param mode Transform mode ('bright', 'dark' or 'both')
 */
-void frst2d(const cv::Mat& inputImage, cv::Mat& outputImage, const int& radii, const double& alpha, const double& stdFactor, const int& mode, const int sideNumber);
+void frst2d(const cv::Mat& inputImage, cv::Mat& outputImage, const int& radii, const double& stdFactor, const int& mode, const int sideNumber);
 
 
 inline void voteOnLine(cv::Mat &O_n, cv::Mat & Bx_n, cv::Mat & By_n, const cv::Vec2i &gp, const double &gNorm, const double &nAngle,

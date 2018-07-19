@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
 
 	// apply FRST
 	cv::Mat frstImage;
-    frst2d(grayImg, frstImage, radius, 2, 0.1, FRST_MODE_BOTH, 4);
+    frst2d(grayImg, frstImage, radius, 0.1, FRST_MODE_BOTH, 4);
 
 	// the frst will have irregular values, normalize them!
 	cv::normalize(frstImage, frstImage, 0.0, 1.0, cv::NORM_MINMAX);

@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <exception>
+#include <omp.h>
 
 #define M_PI 3.14159265358979323846  /* pi */
 
@@ -35,7 +36,7 @@ void gradx(const cv::Mat& input, cv::Mat &output)
 
 
 
-void frst2d(const cv::Mat& inputImage, cv::Mat& outputImage, const int& radii, const double& alpha, const double& stdFactor, const int& mode, const int sideNumber)
+void frst2d(const cv::Mat& inputImage, cv::Mat& outputImage, const int& radii, const double& stdFactor, const int& mode, const int sideNumber)
 {
     int width = inputImage.cols;
     int height = inputImage.rows;
@@ -73,6 +74,7 @@ void frst2d(const cv::Mat& inputImage, cv::Mat& outputImage, const int& radii, c
     cv::Mat Bx_n = cv::Mat::zeros(S.size(), CV_64FC1);
     cv::Mat By_n = cv::Mat::zeros(S.size(), CV_64FC1);
 
+    #pragma omp parallel for
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
             cv::Point p(i, j);
@@ -83,7 +85,7 @@ void frst2d(const cv::Mat& inputImage, cv::Mat& outputImage, const int& radii, c
             // compute n times the gradient angle to have a 2*pi constant value for each side of a regular polygon
             double nAngle = std::atan2(g.val[1], g.val[0]) * double(sideNumber);
 
-            if (gNorm > 0) {
+            if (gNorm > 10.0) { // filter out noise
 
                 cv::Vec2i gp;
                 gp.val[0] = (int)std::round((g.val[0] / gNorm) * radii);
