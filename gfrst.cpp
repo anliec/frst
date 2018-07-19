@@ -119,7 +119,20 @@ void frst2d(const cv::Mat& inputImage, cv::Mat& outputImage, const int& radii, c
 }
 
 
-
+/**
+ * @brief voteOnLine Vote for the lines of possible polygone center
+ * @param O_n matrix of the vote count for a given center
+ * @param Bx_n matrix of the x coordinate of the polygon gradient vector
+ * @param By_n matrix of the x coordinate of the polygon gradient vector
+ * @param gp gradient vector, normalized to the radius length
+ * @param gNorm norm of the original gradient vector
+ * @param nAngle angle of the gradient vector
+ * @param gradientPoint point where the gradiant was computed
+ * @param bright true if we considere the centre to be in the bright direction
+ * @param dark true if we considere the centre to be in the dark direction
+ * @param w vote line length parameter (positif vote for 2*w+1 plus w negative vote at each end)
+ * @param radii internal radius of the polygone we are looking for
+ */
 inline void voteOnLine(cv::Mat &O_n, cv::Mat & Bx_n, cv::Mat & By_n, const cv::Vec2i &gp, const double &gNorm, const double &nAngle,
                        const cv::Point &gradientPoint, const bool &bright, const bool &dark, const int & w, const double &radii)
 {
@@ -143,7 +156,21 @@ inline void voteOnLine(cv::Mat &O_n, cv::Mat & Bx_n, cv::Mat & By_n, const cv::V
 }
 
 
-
+/**
+ * @brief voteAtPos
+ * @param O_n matrix of the vote count for a given center
+ * @param Bx_n matrix of the x coordinate of the polygon gradient vector
+ * @param By_n matrix of the x coordinate of the polygon gradient vector
+ * @param bright true if we considere the centre to be in the bright direction
+ * @param dark true if we considere the centre to be in the dark direction
+ * @param gradientPoint point where the gradiant was computed
+ * @param m line parameter
+ * @param lineSuport unit vector suporting the line
+ * @param gp gradient vector, normalized to the radius length
+ * @param gNorm norm of the original gradient vector
+ * @param nAngle angle of the gradient vector
+ * @param voteValue weight of the vote (default: 1)
+ */
 inline void voteAtPos(cv::Mat & O_n, cv::Mat & Bx_n, cv::Mat & By_n, const bool & bright, const bool & dark, const cv::Point & gradientPoint,
                       const int & m, const cv::Vec2d &lineSuport, const cv::Vec2i &gp, const double & gnorm, const double &nAngle, const int & voteValue)
 {

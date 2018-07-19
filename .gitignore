@@ -1,6 +1,7 @@
 build/
 build_debug/
 *.user
+*.autosave
 gfrst.*
 !*.cpp
 !*.h
