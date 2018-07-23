@@ -1,3 +1,6 @@
+#ifndef GFRST_H
+#define GFRST_H
+
 #include <opencv2/opencv.hpp>
 
 #define FRST_MODE_BRIGHT 1
@@ -30,7 +33,7 @@ void gradx(const cv::Mat& input, cv::Mat &output);
  * @param mode Transform mode ('bright', 'dark' or 'both')
  * @param sideNumber number of sides of the polygon
  */
-void gfrst2d(const cv::Mat& inputImage, cv::Mat& outputImage, std::pair<cv::Mat,cv::Mat>& outputVector,
+void gfrst2d(const cv::Mat& inputImage, cv::Mat& outputImage, cv::Mat* outputVector,
              const int& radii, const int& mode, const int sideNumber);
 
 /**
@@ -47,7 +50,7 @@ void gfrst2d(const cv::Mat& inputImage, cv::Mat& outputImage, std::pair<cv::Mat,
  * @param w vote line length parameter (positif vote for 2*w+1 plus w negative vote at each end)
  * @param radii internal radius of the polygone we are looking for
  */
-inline void voteOnLine(cv::Mat &O_n, cv::Mat & Bx_n, cv::Mat & By_n, const cv::Vec2i &gp, const double &gNorm, const double &nAngle,
+inline void voteOnLine(cv::Mat &O_n, cv::Mat & Bx_n, cv::Mat & By_n, const cv::Vec2i &gp, const double &nAngle,
                        const cv::Point &gradientPoint, const bool &bright, const bool &dark, const int & w, const double &radii);
 /**
  * @brief voteAtPos Vote for one point of the line, which coordinate are computed with the suport vector and the line parameter
@@ -64,8 +67,7 @@ inline void voteOnLine(cv::Mat &O_n, cv::Mat & Bx_n, cv::Mat & By_n, const cv::V
  * @param nAngle angle of the gradient vector
  * @param voteValue weight of the vote (default: 1)
  */
-inline void voteAtPos(cv::Mat & O_n, cv::Mat & Bx_n, cv::Mat & By_n, const bool & bright, const bool & dark, const cv::Point & gradientPoint,
-                      const int & m, const cv::Vec2d &lineSuport, const cv::Vec2i &gp, const double & gnorm, const double &nAngle, const int & voteValue=1);
+inline void voteAtPos(cv::Mat & O_n, cv::Mat & Bx_n, cv::Mat & By_n, const bool & bright, const bool & dark, const cv::Point & gradientPoint, const cv::Vec2d &posOnLine, const cv::Vec2i &gp, const cv::Vec2d voteVector, const int & voteValue=1);
 
 /**
 Perform the specified morphological operation on input image with structure element of specified type and size
@@ -88,7 +90,7 @@ Perform the specified morphological operation on input image with structure elem
 void bwMorph(const cv::Mat& inputImage, cv::Mat& outputImage, const int operation, const int mShape = cv::MORPH_RECT, const int mSize = 3, const int iterations = 1);
 
 
-
+#endif // GFRST_H
 
 
 

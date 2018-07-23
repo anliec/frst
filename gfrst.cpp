@@ -36,7 +36,7 @@ void gradx(const cv::Mat& input, cv::Mat &output)
 
 
 
-void gfrst2d(const cv::Mat& inputImage, cv::Mat& outputImage, std::pair<cv::Mat,cv::Mat>& outputVector,
+void gfrst2d(const cv::Mat& inputImage, cv::Mat& outputImage, cv::Mat* outputVector,
              const int& radii, const int& mode, const int sideNumber)
 {
     int width = inputImage.cols;
@@ -75,36 +75,42 @@ void gfrst2d(const cv::Mat& inputImage, cv::Mat& outputImage, std::pair<cv::Mat,
     cv::Mat Bx_n = cv::Mat::zeros(S.size(), CV_64FC1);
     cv::Mat By_n = cv::Mat::zeros(S.size(), CV_64FC1);
 
+    cv::Mat squareGradientNorm;
+    cv::add(gx.mul(gx), gy.mul(gy), squareGradientNorm); // GPU ?!
+
     #pragma omp parallel for
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
-            cv::Point p(i, j);
-
-            cv::Vec2d g = cv::Vec2d(gx.at<double>(i, j), gy.at<double>(i, j));
-
-            double gNorm = std::sqrt(g.val[0] * g.val[0] + g.val[1] * g.val[1]);
-            // compute n times the gradient angle to have a 2*pi constant value for each side of a regular polygon
-            double nAngle = std::atan2(g.val[1], g.val[0]) * double(sideNumber);
+            cv::Point p(j, i);
+//            cv::Vec2d g = cv::Vec2d(gx.at<double>(p), gy.at<double>(p));
+//            double gNorm = std::sqrt(g.val[0] * g.val[0] + g.val[1] * g.val[1]);
+            double gNorm = squareGradientNorm.at<double>(p);
 
             if (gNorm > 10.0) { // filter out noise
+                gNorm = std::sqrt(gNorm);
+                cv::Vec2d g = cv::Vec2d(gx.at<double>(p), gy.at<double>(p));
+                // compute n times the gradient angle to have a 2*pi constant value for each side of a regular polygon
+                double nAngle = std::atan2(g.val[1], g.val[0]) * double(sideNumber);
 
                 cv::Vec2i gp;
                 gp.val[0] = (int)std::round((g.val[0] / gNorm) * radii);
                 gp.val[1] = (int)std::round((g.val[1] / gNorm) * radii);
 
-                cv::Point pos(p.x + borderOffset, p.y + borderOffset);
-                voteOnLine(O_n, Bx_n, By_n, gp, gNorm, nAngle, pos, bright, dark, w, radii);
+                cv::Point pos = p + cv::Point(borderOffset, borderOffset);
+                voteOnLine(O_n, Bx_n, By_n, gp, nAngle, pos, bright, dark, w, radii);
             }
         }
     }
 
+    // GPU ?!
     O_n = cv::abs(O_n);
 
     cv::Mat Bnorm;
     cv::sqrt(By_n.mul(By_n) + Bx_n.mul(Bx_n), Bnorm);
 
 //    S = O_n.mul(Bnorm) / (4 * (w * radii) * (w * radii));
-    S = O_n.mul(Bnorm) / (4 * radii * radii);
+//    S = O_n.mul(Bnorm) / (4 * radii * radii);
+    cv::multiply(O_n, Bnorm, S, 1.0 / double(4 * radii * radii));
 
 //    int kSize = std::ceil(radii / 2);
 //    if (kSize % 2 == 0)
@@ -112,61 +118,66 @@ void gfrst2d(const cv::Mat& inputImage, cv::Mat& outputImage, std::pair<cv::Mat,
 //    cv::GaussianBlur(S, S, cv::Size(kSize, kSize), radii * stdFactor);
 
     outputImage = S(cv::Rect(borderOffset, borderOffset, width, height));
-    outputVector.first = Bx_n;
-    outputVector.second = By_n;
+    outputVector[0] = Bx_n(cv::Rect(borderOffset, borderOffset, width, height));
+    outputVector[1] = By_n(cv::Rect(borderOffset, borderOffset, width, height));
 }
 
 
 
-inline void voteOnLine(cv::Mat &O_n, cv::Mat & Bx_n, cv::Mat & By_n, const cv::Vec2i &gp, const double &gNorm, const double &nAngle,
+inline void voteOnLine(cv::Mat &O_n, cv::Mat & Bx_n, cv::Mat & By_n, const cv::Vec2i &gp, const double &nAngle,
                        const cv::Point &gradientPoint, const bool &bright, const bool &dark, const int & w, const double &radii)
 {
-    cv::Vec2d lineSuport;
-    lineSuport.val[0] = -double(gp.val[1]) / radii;
-    lineSuport.val[1] = double(gp.val[0]) / radii;
+    cv::Vec2d lineSupport;
+    lineSupport.val[0] = -double(gp.val[1]) / radii;
+    lineSupport.val[1] = double(gp.val[0]) / radii;
+
+    cv::Vec2d voteVector;
+    voteVector.val[0] = std::cos(nAngle);
+    voteVector.val[1] = std::sin(nAngle);
+
+    cv::Vec2d posOnLine = -w * lineSupport;
 
     // positive vote
     for(int m=-w ; m<=w ; ++m)
     {
-        voteAtPos(O_n, Bx_n, By_n, bright, dark, gradientPoint, m, lineSuport, gp, gNorm, nAngle, 1);
+        posOnLine += lineSupport; // posOnLine = m * lineSupport
+        voteAtPos(O_n, Bx_n, By_n, bright, dark, gradientPoint, posOnLine, gp, voteVector, 1);
     }
     // negative vote
+    voteVector *= -1;
     for(int m=w+1 ; m<=2*w ; ++m)
     {
+        posOnLine += lineSupport;
         // vote at one end of the line
-        voteAtPos(O_n, Bx_n, By_n, bright, dark, gradientPoint, m, lineSuport, gp, gNorm, nAngle, -1);
+        voteAtPos(O_n, Bx_n, By_n, bright, dark, gradientPoint, posOnLine, gp, voteVector, -1);
         // vote at the other end
-        voteAtPos(O_n, Bx_n, By_n, bright, dark, gradientPoint, -m, lineSuport, gp, gNorm, nAngle, -1);
+        voteAtPos(O_n, Bx_n, By_n, bright, dark, gradientPoint, -posOnLine, gp, voteVector, -1);
     }
 }
 
 
 
 inline void voteAtPos(cv::Mat & O_n, cv::Mat & Bx_n, cv::Mat & By_n, const bool & bright, const bool & dark, const cv::Point & gradientPoint,
-                      const int & m, const cv::Vec2d &lineSuport, const cv::Vec2i &gp, const double & gnorm, const double &nAngle, const int & voteValue)
+                      const cv::Vec2d &posOnLine, const cv::Vec2i &gp, const cv::Vec2d voteVector, const int & voteValue)
 {
-    double lineX = m * lineSuport.val[0];
-    double lineY = m * lineSuport.val[1];
-
     if (bright)
     {
-        // line center is constant on line remove addition ? (or the compiler will take care of that ?)
-        cv::Point pos(gradientPoint.x + gp.val[0] + lineX,
-                      gradientPoint.y + gp.val[1] + lineY);
+        cv::Point pos(gradientPoint.x + gp.val[0] + posOnLine.val[0],
+                      gradientPoint.y + gp.val[1] + posOnLine.val[1]);
 
-        O_n.at<double>(pos.x, pos.y) = O_n.at<double>(pos.x, pos.y) + voteValue;
-        Bx_n.at<double>(pos.x, pos.y) = Bx_n.at<double>(pos.x, pos.y) + voteValue * gnorm * std::cos(nAngle); // optimisation: compute cos/sin only once ?
-        By_n.at<double>(pos.x, pos.y) = By_n.at<double>(pos.x, pos.y) + voteValue * gnorm * std::sin(nAngle);
+        O_n.at<double>(pos) = O_n.at<double>(pos) + voteValue;
+        Bx_n.at<double>(pos) = Bx_n.at<double>(pos) + voteVector.val[0];
+        By_n.at<double>(pos) = By_n.at<double>(pos) + voteVector.val[1];
     }
 
     if (dark)
     {
-        cv::Point pos(gradientPoint.x - gp.val[0] + lineX,
-                      gradientPoint.y - gp.val[1] + lineY);
+        cv::Point pos(gradientPoint.x - gp.val[0] + posOnLine.val[0],
+                      gradientPoint.y - gp.val[1] + posOnLine.val[1]);
 
-        O_n.at<double>(pos.x, pos.y) = O_n.at<double>(pos.x, pos.y) + voteValue;
-        Bx_n.at<double>(pos.x, pos.y) = Bx_n.at<double>(pos.x, pos.y) + voteValue * gnorm * std::cos(nAngle);
-        By_n.at<double>(pos.x, pos.y) = By_n.at<double>(pos.x, pos.y) + voteValue * gnorm * std::sin(nAngle);
+        O_n.at<double>(pos) = O_n.at<double>(pos) + voteValue;
+        Bx_n.at<double>(pos) = Bx_n.at<double>(pos) + voteVector.val[0];
+        By_n.at<double>(pos) = By_n.at<double>(pos) + voteVector.val[1];
     }
 }
 

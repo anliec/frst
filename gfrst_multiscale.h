@@ -1,0 +1,4 @@
+#ifndef GFRST_MULTISCALE_H
+#define GFRST_MULTISCALE_H
+
+#endif // GFRST_MULTISCALE_H
